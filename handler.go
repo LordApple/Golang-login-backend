@@ -4,6 +4,9 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
+	"time"
+
+	uuid "github.com/satori/go.uuid"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -29,7 +32,25 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintln(w, "Login Worked")
+	Token, err := uuid.NewV4()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if _, err := re.Do("SETEX", Token.String(), "31557600", uname); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:    "token",
+		Value:   Token.String(),
+		Expires: time.Now().Add(8766 * time.Hour),
+		Path:    "/",
+	})
+
+	http.Redirect(w, r, "/Welcome", http.StatusSeeOther)
 }
 
 func handleSignup(w http.ResponseWriter, r *http.Request) {
@@ -49,6 +70,51 @@ func handleSignup(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Fprintln(w, "Signup Done")
 
+}
+
+func handleWelcome(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("token")
+	if err != nil {
+		if err == http.ErrNoCookie {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	Token := cookie.Value
+	res, err := re.Do("GET", Token)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if res == nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	fmt.Fprintf(w, "Welcome %s", res)
+}
+
+func handleLogout(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("token")
+	if err != nil {
+		if err == http.ErrNoCookie {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	_, err = re.Do("DEL", cookie.Value)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 func handleRoot(w http.ResponseWriter, r *http.Request) {
