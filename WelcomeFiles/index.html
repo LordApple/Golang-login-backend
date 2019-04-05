@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Welcome Page</title>
+    <link rel="stylesheet" type="text/css" media="screen" href="index.css">
+    <script src="index.js"></script>
+</head>
+<body>
+    <p><script>
+        function GetUser()
+        {
+            var xmlHttp = new XMLHttpRequest();
+            xmlHttp.open( "GET", "http://localhost:8000/GetUser/", false );
+            xmlHttp.send( null );
+            return JSON.parse(xmlHttp.responseText);
+        }
+        document.write("Hello " + GetUser()["username"] + ", How are you?")
+        
+        </script></p>
+    <button onclick="Logout()">Logout</button>
+</body>
+</html>

@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -25,9 +26,13 @@ func main() {
 
 	http.HandleFunc("/", handleRoot)
 
-	http.HandleFunc("/Welcome", handleWelcome)
+	http.HandleFunc("/Welcome/", handleWelcome)
 
 	http.HandleFunc("/Logout", handleLogout)
+
+	//API Handlers
+
+	http.HandleFunc("/GetUser/", GetUser)
 
 	initDB()
 	initRedis()
@@ -46,6 +51,6 @@ func initRedis() {
 	var err error
 	re, err = redis.DialURL("redis://localhost")
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
 	}
 }

@@ -62,13 +62,13 @@ func handleSignup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = db.Query("insert into users values ($1, $2)", uname, string(pswdHash))
+	_, err = db.Exec("insert into users values ($1, $2)", uname, string(pswdHash))
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	fmt.Fprintln(w, "Signup Done")
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 
 }
 
@@ -94,7 +94,7 @@ func handleWelcome(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, "Welcome %s", res)
+	defer http.StripPrefix("/Welcome/", http.FileServer(http.Dir("./WelcomeFiles"))).ServeHTTP(w, r)
 }
 
 func handleLogout(w http.ResponseWriter, r *http.Request) {
